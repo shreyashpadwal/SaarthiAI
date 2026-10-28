@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Saarthi AI – Research Agent</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a12;--bg2:#0f0f1c;--surf:#13131f;--surf2:#1a1a2e;--surf3:#22223a;
+  --bdr:#2a2a40;--bdr2:#363660;
+  --text:#e8e8f4;--text2:#9090b8;--text3:#555580;
+  --p:#6c63ff;--p2:#8b85ff;--p3:#4338ca;--pbg:#6c63ff15;--pbdr:#6c63ff40;
+  --o:#f97316;--o2:#fb923c;--obg:#f9731615;
+  --t:#06b6d4;--t2:#22d3ee;--tbg:#06b6d415;
+  --green:#22c55e;--red:#f87171;
+  --nav:220px;--r:12px;--r2:8px;
+}
+[data-theme=light]{
+  --bg:#f0f0f8;--bg2:#e8e8f4;--surf:#fff;--surf2:#f4f4fc;--surf3:#ececf8;
+  --bdr:#dddde8;--bdr2:#ccccdd;--text:#1a1a2e;--text2:#4a4a6a;--text3:#9090b0;
+  --pbg:#6c63ff10;--pbdr:#6c63ff30;--obg:#f9731610;--tbg:#06b6d410;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:var(--bg);color:var(--text);display:flex;overflow:hidden;transition:background .2s,color .2s}
+
+/* SIDEBAR */
+#sb{width:var(--nav);flex-shrink:0;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;height:100vh;z-index:10}
+.sb-logo{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr)}
+.sa-logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--t));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:.85rem;flex-shrink:0}
+.sb-title{font-weight:800;font-size:.88rem;line-height:1.2;color:var(--text)}
+.sb-title small{font-weight:400;font-size:.65rem;color:var(--text2);display:block;line-height:1.3}
+.nav-sec{padding:10px 14px 4px;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:700}
+.nav-links{flex:1;padding:6px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.ni{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--r2);cursor:pointer;color:var(--text2);font-size:.85rem;font-weight:500;border:none;background:none;width:100%;text-align:left;transition:all .15s}
+.ni:hover{background:var(--surf2);color:var(--text)}
+.ni.active{background:var(--pbg);color:var(--p2);border:1px solid var(--pbdr)}
+.ni .ic{width:18px;text-align:center;font-size:.95rem;flex-shrink:0}
+.nbadge{margin-left:auto;background:var(--o);color:#fff;border-radius:99px;font-size:.6rem;padding:1px 6px;font-weight:800}
+.sb-bot{padding:10px;border-top:1px solid var(--bdr);display:flex;flex-direction:column;gap:8px}
+.theme-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surf2);border-radius:var(--r2);font-size:.78rem;color:var(--text2)}
+.tgl{position:relative;width:36px;height:19px;cursor:pointer}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-t{position:absolute;inset:0;background:#333;border-radius:99px;transition:.25s}
+.tgl-t::before{content:'';position:absolute;width:13px;height:13px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.25s}
+.tgl input:checked+.tgl-t{background:var(--p)}
+.tgl input:checked+.tgl-t::before{transform:translateX(17px)}
+.srv-pill{display:flex;align-items:center;gap:7px;padding:6px 10px;background:var(--surf2);border-radius:var(--r2);font-size:.75rem;color:var(--text2)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0;transition:all .3s}
+.dot.red{background:var(--red);box-shadow:0 0 6px var(--red)}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{background:var(--surf);border-bottom:1px solid var(--bdr);padding:11px 22px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+#topbar .tb-icon{width:32px;height:32px;border-radius:var(--r2);background:linear-gradient(135deg,var(--p),var(--t));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;flex-shrink:0}
+.tb-info h2{font-size:1rem;font-weight:700;color:var(--text)}
+.tb-info p{font-size:.73rem;color:var(--text2)}
+.tb-actions{margin-left:auto;display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r2);font-size:.8rem;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--p3)}
+.btn-o{background:var(--o);color:#fff}.btn-o:hover{background:var(--o2)}
+.btn-gh{background:transparent;color:var(--text2);border:1px solid var(--bdr)}.btn-gh:hover{background:var(--surf2);color:var(--text)}
+
+/* PAGES */
+.page{display:none;flex:1;overflow:hidden;flex-direction:column}
+.page.active{display:flex}
+.scroll{overflow-y:auto;flex:1}
+
+/* HOME */
+.home-pad{padding:28px}
+.hero{background:linear-gradient(135deg,var(--surf),var(--surf2));border:1px solid var(--bdr);border-radius:16px;padding:44px 36px;text-align:center;position:relative;overflow:hidden;margin-bottom:28px}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% -5%,#6c63ff25,transparent);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--pbg);border:1px solid var(--pbdr);border-radius:99px;padding:4px 14px;font-size:.72rem;color:var(--p2);margin-bottom:18px;font-weight:700}
+.hero h1{font-size:2.2rem;font-weight:900;background:linear-gradient(135deg,var(--p2) 0%,var(--t2) 60%,var(--o) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;line-height:1.15}
+[data-theme=light] .hero h1{background:linear-gradient(135deg,var(--p3),var(--t));-webkit-background-clip:text;background-clip:text}
+.hero p{font-size:.95rem;color:var(--text2);max-width:520px;margin:0 auto 24px;line-height:1.7}
+.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:28px}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;transition:all .15s}
+.card:hover{border-color:var(--pbdr);box-shadow:0 0 20px var(--pbg);transform:translateY(-2px)}
+.card-ic{width:38px;height:38px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:10px}
+.ci-p{background:var(--pbg);border:1px solid var(--pbdr)}
+.ci-o{background:var(--obg);border:1px solid #f9731640}
+.ci-t{background:var(--tbg);border:1px solid #06b6d440}
+.card h3{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:5px}
+.card p{font-size:.78rem;color:var(--text2);line-height:1.6}
+.sec-hd{margin-bottom:4px;font-size:1rem;font-weight:800;color:var(--text)}
+.sec-sub{font-size:.8rem;color:var(--text2);margin-bottom:18px}
+.steps{display:flex;flex-direction:column;gap:0;margin-bottom:28px}
+.step{display:flex;gap:14px;padding-bottom:22px;position:relative}
+.step:last-child{padding-bottom:0}
+.step-n{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--t));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;flex-shrink:0;z-index:1}
+.step-line{position:absolute;left:16px;top:34px;bottom:0;width:2px;background:var(--bdr);z-index:0}
+.step:last-child .step-line{display:none}
+.step h4{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px;padding-top:5px}
+.step p{font-size:.8rem;color:var(--text2);line-height:1.55}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:28px}
+.stat{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;text-align:center}
+.stat-v{font-size:1.7rem;font-weight:900;background:linear-gradient(135deg,var(--p),var(--t));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+.stat-l{font-size:.72rem;color:var(--text2);margin-top:4px}
+
+/* RESEARCH */
+.rl{display:flex;flex-direction:column;height:100%;overflow:hidden}
+#cfgbar{background:var(--bg2);border-bottom:1px solid var(--bdr);padding:7px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+#cfgbar label{font-size:.7rem;color:var(--text2)}
+#cfgbar select,#cfgbar input[type=number]{background:var(--surf);border:1px solid var(--bdr);color:var(--text);border-radius:6px;padding:3px 7px;font-size:.73rem}
+#cfgbar select:focus,#cfgbar input:focus{outline:none;border-color:var(--p)}
+#chat{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.msg{max-width:880px;width:100%;border-radius:var(--r);padding:13px 15px;font-size:.87rem;line-height:1.65}
+.msg.user{background:linear-gradient(135deg,#1a1f40,#1e1e35);border:1px solid #2a3a70;align-self:flex-end;color:#c7d8ff;max-width:620px}
+[data-theme=light] .msg.user{background:linear-gradient(135deg,#eef2ff,#e8edff);border-color:#a5b4fc;color:#1e1b4b}
+.msg.ai{background:var(--surf);border:1px solid var(--bdr);align-self:flex-start}
+.msg.err{background:var(--surf);border:1px solid #4a2030;align-self:center;color:var(--red);font-size:.8rem;text-align:center;max-width:500px}
+.msg-meta{display:flex;align-items:center;gap:7px;margin-bottom:9px;flex-wrap:wrap}
+.mlbl{font-size:.66rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-weight:800}
+.mtime{font-size:.63rem;color:var(--text3)}
+.macts{display:flex;gap:5px;align-items:center;margin-left:auto}
+.wc{font-size:.63rem;color:var(--text3);padding:1px 6px;background:var(--surf2);border-radius:4px;border:1px solid var(--bdr)}
+.bsm{display:inline-flex;align-items:center;gap:3px;background:var(--surf2);border:1px solid var(--bdr);color:var(--text2);border-radius:6px;padding:3px 8px;font-size:.7rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+.bsm:hover{background:var(--surf3);color:var(--text);border-color:var(--bdr2)}
+.bsm.copied{background:#052e1c;border-color:var(--green);color:var(--green)}
+.bsm.pdf-btn{background:var(--obg);border-color:#f9731640;color:var(--o)}
+.bsm.pdf-btn:hover{background:var(--o);color:#fff;border-color:var(--o)}
+/* Report markdown */
+.rp h1{color:var(--p2);font-size:1.1rem;margin:16px 0 7px;border-bottom:2px solid var(--o);padding-bottom:5px;display:inline-block}
+[data-theme=light] .rp h1{color:var(--p3)}
+.rp h2{color:var(--t);font-size:.97rem;margin:13px 0 5px}
+[data-theme=light] .rp h2{color:#0891b2}
+.rp h3{color:var(--o);font-size:.9rem;margin:9px 0 4px}
+.rp p{margin:5px 0;color:var(--text2)}
+.rp strong{color:var(--text)}
+.rp em{color:#c4b5fd}
+.rp code{background:var(--surf2);border:1px solid var(--bdr);border-radius:4px;padding:1px 5px;font-size:.8em;color:#f0abfc;font-family:monospace}
+.rp pre{background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r2);padding:12px;overflow-x:auto;margin:10px 0}
+.rp pre code{background:none;border:none;padding:0;font-size:.82rem}
+.rp a{color:var(--t);text-decoration:none}.rp a:hover{text-decoration:underline}
+.rp ul,.rp ol{padding-left:20px;margin:5px 0}.rp li{margin:3px 0;color:var(--text2)}
+.rp blockquote{border-left:3px solid var(--p);padding:5px 12px;color:var(--text2);margin:7px 0;background:var(--pbg);border-radius:0 6px 6px 0}
+.rp hr{border:none;border-top:1px solid var(--bdr);margin:14px 0}
+.rp table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.8rem}
+.rp th{background:var(--p);color:#fff;padding:8px 10px;text-align:left;border:1px solid var(--pbdr);font-weight:700}
+.rp td{padding:7px 10px;border:1px solid var(--bdr);color:var(--text2);vertical-align:top}
+.rp tr:nth-child(even) td{background:var(--pbg)}
+/* Progress */
+.prog{display:flex;flex-direction:column;gap:5px;padding:4px 0}
+.ps{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text3);transition:color .2s}
+.ps.ac{color:var(--text)}.ps.dn{color:var(--green)}
+.sp{width:12px;height:12px;border:2px solid var(--bdr);border-top-color:var(--p);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Input */
+#iarea{background:var(--surf);border-top:1px solid var(--bdr);padding:13px 18px;display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+#qinp{flex:1;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 13px;color:var(--text);font-size:.88rem;resize:none;min-height:43px;max-height:130px;font-family:inherit;line-height:1.5;transition:border-color .15s}
+#qinp:focus{outline:none;border-color:var(--p)}
+#qinp::placeholder{color:var(--text3)}
+#sbtn{background:linear-gradient(135deg,var(--p),var(--t));color:#fff;border:none;border-radius:var(--r);padding:10px 18px;font-size:.86rem;cursor:pointer;font-weight:800;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
+#sbtn:hover:not(:disabled){opacity:.9;transform:translateY(-1px)}
+#sbtn:disabled{background:var(--surf2);color:var(--text3);cursor:not-allowed;transform:none}
+/* History */
+.hw{padding:24px}
+.hempty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;color:var(--text3);text-align:center;gap:10px}
+.hgrid{display:flex;flex-direction:column;gap:10px}
+.hi{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 18px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:12px}
+.hi:hover{border-color:var(--pbdr);background:var(--surf2)}
+.hiq{font-size:.87rem;font-weight:700;color:var(--text);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hip{font-size:.76rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.hitag{font-size:.66rem;color:var(--text3);background:var(--surf2);padding:2px 7px;border-radius:99px;border:1px solid var(--bdr)}
+.delbtn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:.85rem;padding:3px 6px;border-radius:4px;transition:all .15s;flex-shrink:0}
+.delbtn:hover{color:var(--red);background:#f871711a}
+/* About */
+.aw{padding:28px}
+.ahero{background:linear-gradient(135deg,var(--surf),var(--surf2));border:1px solid var(--bdr);border-radius:16px;padding:36px;margin-bottom:24px;position:relative;overflow:hidden}
+.ahero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 90% 50%,#f9731615,transparent);pointer-events:none}
+.ahero h2{font-size:1.5rem;font-weight:900;margin-bottom:8px;background:linear-gradient(135deg,var(--p),var(--o));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ahero p{font-size:.88rem;color:var(--text2);max-width:580px;line-height:1.7}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:24px}
+.tc{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;display:flex;gap:10px}
+.tic{width:34px;height:34px;border-radius:var(--r2);background:var(--pbg);border:1px solid var(--pbdr);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.tin h4{font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.tin p{font-size:.73rem;color:var(--text2);line-height:1.5}
+.faq{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+.fi{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.fq{padding:12px 16px;font-size:.85rem;font-weight:700;color:var(--text);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.fq:hover{background:var(--surf2)}
+.fq .ch{transition:transform .2s;color:var(--text2)}
+.fi.open .ch{transform:rotate(180deg)}
+.fa{padding:0 16px;max-height:0;overflow:hidden;transition:all .2s;font-size:.8rem;color:var(--text2);line-height:1.7}
+.fi.open .fa{padding:0 16px 12px;max-height:300px}
+/* Settings */
+.sw{padding:24px}
+.ss{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
+.sh{padding:14px 18px;border-bottom:1px solid var(--bdr);font-size:.85rem;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px}
+.sr{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);gap:14px}
+.sr:last-child{border-bottom:none}
+.sl{font-size:.82rem;color:var(--text);font-weight:600}
+.sd{font-size:.73rem;color:var(--text2);margin-top:2px}
+.si{background:var(--surf2);border:1px solid var(--bdr);color:var(--text);border-radius:6px;padding:6px 9px;font-size:.8rem;min-width:170px}
+.si:focus{outline:none;border-color:var(--p)}
+/* Toast */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surf);border:1px solid var(--green);color:var(--green);padding:7px 16px;border-radius:var(--r2);font-size:.8rem;opacity:0;transition:all .25s;pointer-events:none;z-index:999;box-shadow:0 4px 20px #0008}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+/* Responsive */
+@media(max-width:600px){#sb{width:56px}.sb-title,.nav-sec,.theme-row span:first-child,.srv-pill span:last-child{display:none}.ni{justify-content:center;padding:12px}.sa-logo{margin:0 auto}.sb-logo{justify-content:center}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sb">
+  <div class="sb-logo">
+    <div class="sa-logo">SA</div>
+    <div class="sb-title">Saarthi AI<small>Research Agent System</small></div>
+  </div>
+  <div class="nav-links">
+    <div class="nav-sec">Main</div>
+    <button class="ni active" onclick="nav('home')"><span class="ic">🏠</span><span>Home</span></button>
+    <button class="ni" onclick="nav('research')"><span class="ic">🔍</span><span>Research</span></button>
+    <button class="ni" onclick="nav('history')"><span class="ic">📚</span><span>History</span><span class="nbadge" id="hbadge" style="display:none">0</span></button>
+    <div class="nav-sec">Info</div>
+    <button class="ni" onclick="nav('about')"><span class="ic">ℹ️</span><span>About</span></button>
+    <button class="ni" onclick="nav('settings')"><span class="ic">⚙️</span><span>Settings</span></button>
+  </div>
+  <div class="sb-bot">
+    <div class="theme-row">
+      <span>🌙 Dark</span>
+      <label class="tgl"><input type="checkbox" id="tchk" onchange="setTheme(this.checked?'light':'dark')"><div class="tgl-t"></div></label>
+    </div>
+    <div class="srv-pill"><div class="dot" id="dot"></div><span id="stxt">Checking…</span></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <div class="tb-icon" id="tb-icon">🏠</div>
+    <div class="tb-info"><h2 id="tb-title">Home</h2><p id="tb-sub">Welcome to Saarthi AI</p></div>
+    <div class="tb-actions">
+      <button class="btn btn-p" onclick="nav('research')">🔍 New Research</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="page active" id="page-home"><div class="scroll"><div class="home-pad">
+    <div class="hero">
+      <div class="hero-badge">✨ Autonomous Multi-Agent Research System</div>
+      <h1>Saarthi AI</h1>
+      <p>Your intelligent research guide — ask any question and get a comprehensive, cited report powered by real AI agents searching the live web.</p>
+      <div class="hero-btns">
+        <button class="btn btn-p" style="padding:10px 22px;font-size:.9rem" onclick="nav('research')">🔍 Start Research</button>
+        <button class="btn btn-gh" style="padding:10px 22px;font-size:.9rem" onclick="nav('about')">Learn More →</button>
+      </div>
+    </div>
+    <div class="sec-hd">✨ Capabilities</div><div class="sec-sub">What Saarthi AI does for you</div>
+    <div class="cards">
+      <div class="card"><div class="card-ic ci-p">🌐</div><h3>Live Web Search</h3><p>Uses Tavily to search the live internet and fetch the most current information on any topic.</p></div>
+      <div class="card"><div class="card-ic ci-t">🤖</div><h3>Multi-Agent Orchestration</h3><p>Supervisor agent coordinates multiple researcher agents working in parallel on sub-tasks.</p></div>
+      <div class="card"><div class="card-ic ci-o">📝</div><h3>Structured Reports</h3><p>Outputs comprehensive reports with sections, tables, citations and key takeaways.</p></div>
+      <div class="card"><div class="card-ic ci-p">📄</div><h3>PDF Export</h3><p>Generate colorful, professional PDF reports with one click — cover page, sections, and footer.</p></div>
+      <div class="card"><div class="card-ic ci-t">💾</div><h3>Research History</h3><p>Every report is saved in your session history — revisit, copy, or export any past research.</p></div>
+      <div class="card"><div class="card-ic ci-o">⚡</div><h3>Fast & Free</h3><p>Powered by Groq's free-tier LLM inference — blazing fast with zero cost for basic research.</p></div>
+    </div>
+    <div class="sec-hd">🔄 How It Works</div><div class="sec-sub">Four automated steps from question to report</div>
+    <div class="steps">
+      <div class="step"><div class="step-n">1</div><div class="step-line"></div><div><h4>Plan</h4><p>The supervisor agent analyses your question and breaks it into focused research tasks.</p></div></div>
+      <div class="step"><div class="step-n">2</div><div class="step-line"></div><div><h4>Search</h4><p>Researcher agents search the live web using Tavily, fetching relevant sources in parallel.</p></div></div>
+      <div class="step"><div class="step-n">3</div><div class="step-line"></div><div><h4>Synthesize</h4><p>Each source is read, summarized, and compressed into structured research notes.</p></div></div>
+      <div class="step"><div class="step-n">4</div><div><h4>Report</h4><p>A final agent compiles everything into a comprehensive, cited, structured report.</p></div></div>
+    </div>
+    <div class="sec-hd">📊 Session Stats</div><div class="sec-sub">This session</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="st-reps">0</div><div class="stat-l">Reports</div></div>
+      <div class="stat"><div class="stat-v" id="st-words">0</div><div class="stat-l">Words Written</div></div>
+      <div class="stat"><div class="stat-v">Free</div><div class="stat-l">Cost</div></div>
+      <div class="stat"><div class="stat-v">Local</div><div class="stat-l">Privacy</div></div>
+    </div>
+  </div></div></div>
+
+  <!-- RESEARCH -->
+  <div class="page" id="page-research">
+    <div class="rl">
+      <div id="cfgbar">
+        <label>Research model:</label>
+        <select id="rm">
+          <option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b ✅</option>
+          <option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option>
+          <option value="groq:openai/gpt-oss-20b">groq:openai/gpt-oss-20b</option>
+        </select>
+        <label>Summarization:</label>
+        <select id="sm">
+          <option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b ✅</option>
+          <option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option>
+          <option value="groq:openai/gpt-oss-20b">groq:openai/gpt-oss-20b ⚠️</option>
+        </select>
+        <label>Concurrent:</label>
+        <input id="cu" type="number" value="1" min="1" max="3" style="width:48px"/>
+        <button class="btn btn-gh" onclick="clearChat()" style="margin-left:auto;font-size:.72rem;padding:4px 10px">🗑 Clear</button>
+      </div>
+      <div id="chat">
+        <div class="msg ai">
+          <div class="msg-meta"><span class="mlbl">🤖 Saarthi AI</span></div>
+          <div class="rp">
+            <p>👋 Hello! I'm <strong>Saarthi AI</strong> — your autonomous research guide.</p>
+            <p style="margin-top:6px">Ask me any research question and I'll search the web, synthesize sources, and write a full report. You can then export it as <strong>PDF</strong>, <strong>Markdown</strong>, or copy it.</p>
+            <p style="margin-top:8px;color:var(--text3)"><strong>Try asking:</strong></p>
+            <ul><li>What are the latest AI breakthroughs in 2025?</li><li>Compare React vs Vue vs Svelte for modern web apps</li><li>What is the current state of quantum computing?</li></ul>
+          </div>
+        </div>
+      </div>
+      <div id="iarea">
+        <textarea id="qinp" placeholder="Ask Saarthi AI a research question… (Enter to send)" rows="1"></textarea>
+        <button id="sbtn" onclick="sendQ()">🔍 Research</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="page" id="page-history"><div class="scroll"><div class="hw">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div><div class="sec-hd">Research History</div><div class="sec-sub">Saved permanently in your browser</div></div>
+      <button class="btn btn-gh" onclick="clrHist()" style="font-size:.76rem">🗑 Clear All</button>
+    </div>
+    <div id="hlist"><div class="hempty"><span style="font-size:2.5rem;opacity:.3">📭</span><strong>No history yet</strong><span style="font-size:.8rem">Reports appear here after research</span></div></div>
+  </div></div></div>
+
+  <!-- ABOUT -->
+  <div class="page" id="page-about"><div class="scroll"><div class="aw">
+    <div class="ahero">
+      <h2>About Saarthi AI</h2>
+      <p>Saarthi AI is an open-source autonomous multi-agent research system. Multiple AI agents collaborate — planning, searching the web, reading sources, summarizing, and writing — to produce comprehensive research reports on any topic. All processing runs locally on your machine.</p>
+    </div>
+    <div class="sec-hd" style="margin-bottom:4px">🛠 Technology Stack</div><div class="sec-sub">What powers Saarthi AI</div>
+    <div class="tgrid">
+      <div class="tc"><div class="tic">🔗</div><div class="tin"><h4>LangGraph</h4><p>Multi-agent orchestration with stateful graph execution.</p></div></div>
+      <div class="tc"><div class="tic">⚡</div><div class="tin"><h4>Groq</h4><p>Ultra-fast LLM inference via custom silicon (LPU).</p></div></div>
+      <div class="tc"><div class="tic">🌐</div><div class="tin"><h4>Tavily</h4><p>AI-optimised web search — clean content at scale.</p></div></div>
+      <div class="tc"><div class="tic">🐍</div><div class="tin"><h4>Python 3.11</h4><p>Async backend with FastAPI + LangGraph runtime.</p></div></div>
+      <div class="tc"><div class="tic">📄</div><div class="tin"><h4>jsPDF</h4><p>Client-side PDF generation — colorful, formatted reports.</p></div></div>
+      <div class="tc"><div class="tic">📦</div><div class="tin"><h4>uv + venv</h4><p>Fast Python packaging with isolated environment.</p></div></div>
+    </div>
+    <div class="sec-hd" style="margin-bottom:4px">❓ FAQ</div><div class="sec-sub">Common questions</div>
+    <div class="faq">
+      <div class="fi"><div class="fq" onclick="tfaq(this)">Is my data private? <span class="ch">▼</span></div><div class="fa">Yes. The server runs on localhost. Only your API calls to Groq and Tavily leave your machine — no other third party sees your data.</div></div>
+      <div class="fi"><div class="fq" onclick="tfaq(this)">Why does research take 5-10 minutes? <span class="ch">▼</span></div><div class="fa">The agent searches multiple sources, reads each one, summarises, compresses, and writes a full report — all sequentially (concurrent=1) to stay within Groq's free-tier rate limits.</div></div>
+      <div class="fi"><div class="fq" onclick="tfaq(this)">What if I get a rate limit error? <span class="ch">▼</span></div><div class="fa">Wait 2-3 minutes and try again. The Groq free tier has token-per-minute limits. Keep Concurrent=1 and use gpt-oss-120b for both models.</div></div>
+      <div class="fi"><div class="fq" onclick="tfaq(this)">How does PDF export work? <span class="ch">▼</span></div><div class="fa">The PDF is generated entirely in your browser using jsPDF. It includes a gradient cover page, formatted sections with colour-coded headings, tables, bullet lists, and a branded footer. No server needed.</div></div>
+    </div>
+  </div></div></div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings"><div class="scroll"><div class="sw">
+    <div class="sec-hd" style="margin-bottom:4px">Settings</div><div class="sec-sub" style="margin-bottom:20px">Configure Saarthi AI preferences</div>
+    <div class="ss">
+      <div class="sh">🤖 Model Configuration</div>
+      <div class="sr"><div><div class="sl">Research Model</div><div class="sd">Used for planning, compression & final report</div></div><select class="si" id="s-rm" onchange="syncS()"><option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b</option><option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option></select></div>
+      <div class="sr"><div><div class="sl">Summarization Model</div><div class="sd">Summarises each web source (runs many times)</div></div><select class="si" id="s-sm" onchange="syncS()"><option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b</option><option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option></select></div>
+      <div class="sr"><div><div class="sl">Concurrent Research Units</div><div class="sd">Parallel agents (lower = fewer rate limit errors)</div></div><input type="number" class="si" id="s-cu" value="1" min="1" max="3" style="min-width:70px;max-width:70px" onchange="syncS()"/></div>
+    </div>
+    <div class="ss">
+      <div class="sh">📄 PDF Export</div>
+      <div class="sr"><div><div class="sl">PDF Theme</div><div class="sd">Visual style for exported reports</div></div><select class="si"><option value="saarthi" selected>Saarthi Default (Purple + Orange)</option><option value="dark">Dark Mode PDF</option><option value="minimal">Minimal</option></select></div>
+      <div class="sr"><div><div class="sl">Include Cover Page</div><div class="sd">Full-page gradient cover with title and date</div></div><select class="si"><option value="yes" selected>Yes</option><option value="no">No</option></select></div>
+    </div>
+    <div class="ss">
+      <div class="sh">🎨 Appearance</div>
+      <div class="sr"><div><div class="sl">Theme</div><div class="sd">Switch between dark and light mode</div></div><div style="display:flex;gap:8px"><button class="btn btn-gh" onclick="setTheme('dark')" style="font-size:.78rem">🌙 Dark</button><button class="btn btn-gh" onclick="setTheme('light')" style="font-size:.78rem">☀️ Light</button></div></div>
+    </div>
+    <div class="ss">
+      <div class="sh">💾 Data</div>
+      <div class="sr"><div><div class="sl">Clear History</div><div class="sd">Remove all saved research from this session</div></div><button class="btn btn-gh" onclick="clrHist()" style="color:var(--red);border-color:var(--red);font-size:.78rem">🗑 Clear History</button></div>
+    </div>
+  </div></div></div>
+</div>
+
+<div id="toast">✓ Done!</div>
+
+<script>
+/* ===== CONSTANTS ===== */
+const API='http://127.0.0.1:2024',AID='deep_researcher';
+// Load history from localStorage on startup
+let hist=[],totalW=0,busy=false;
+try{
+  const saved=localStorage.getItem('saarthi-history');
+  if(saved){hist=JSON.parse(saved);totalW=hist.reduce((s,h)=>s+(h.words||0),0);}
+}catch(e){hist=[];}
+
+/* ===== NAVIGATION ===== */
+const PAGES={
+  home:{icon:'🏠',title:'Home',sub:'Welcome to Saarthi AI'},
+  research:{icon:'🔍',title:'Research',sub:'Ask a question, get a full report'},
+  history:{icon:'📚',title:'History',sub:'Reports from this session'},
+  about:{icon:'ℹ️',title:'About Saarthi AI',sub:'Technology stack & FAQ'},
+  settings:{icon:'⚙️',title:'Settings',sub:'Configure models and preferences'},
+};
+function nav(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.ni').forEach(e=>{if(e.textContent.trim().toLowerCase().startsWith(p))e.classList.add('active');});
+  document.getElementById('tb-icon').textContent=PAGES[p].icon;
+  document.getElementById('tb-title').textContent=PAGES[p].title;
+  document.getElementById('tb-sub').textContent=PAGES[p].sub;
+  const ta=document.querySelector('.tb-actions');
+  if(p==='research')ta.innerHTML='<button class="btn btn-gh" onclick="clearChat()" style="font-size:.78rem">🗑 Clear Chat</button>';
+  else ta.innerHTML='<button class="btn btn-p" onclick="nav(\'research\')">🔍 New Research</button>';
+  if(p==='history')renderHist();
+}
+
+/* ===== THEME ===== */
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('tchk').checked=(t==='light');localStorage.setItem('saarthi-theme',t);}
+setTheme(localStorage.getItem('saarthi-theme')||'dark');
+
+// Init badge + stats from loaded history
+setTimeout(()=>{updateBadge();updateStats();},0);
+
+/* ===== SERVER STATUS ===== */
+async function chkSrv(){
+  const dot=document.getElementById('dot'),st=document.getElementById('stxt');
+  try{const r=await fetch(`${API}/ok`,{signal:AbortSignal.timeout(3000)});dot.className='dot'+(r.ok?'':' red');st.textContent=r.ok?'Connected':'Server error';}
+  catch{dot.className='dot red';st.textContent='Offline';}
+}
+chkSrv();setInterval(chkSrv,12000);
+
+/* ===== TOAST ===== */
+function toast(m='✓ Done!'){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+
+/* ===== TEXTAREA ===== */
+document.getElementById('qinp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,130)+'px';});
+document.getElementById('qinp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendQ();}});
+
+/* ===== HELPERS ===== */
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function ts(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function wc(t){return t.trim().split(/\s+/).filter(Boolean).length;}
+function copyT(txt,btn){navigator.clipboard.writeText(txt).then(()=>{toast('📋 Copied!');if(btn){const o=btn.innerHTML;btn.classList.add('copied');btn.innerHTML='✓ Copied';setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML=o;},2000);}});}
+function dlMd(txt,title){const sl=(title||'report').slice(0,40).replace(/\s+/g,'-').replace(/[^a-z0-9-]/gi,'');const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([txt],{type:'text/markdown'})),download:`${sl||'saarthi-report'}.md`});a.click();URL.revokeObjectURL(a.href);toast('⬇ Downloaded!');}
+
+/* ===== MARKDOWN RENDERER (HTML) ===== */
+function renderMd(raw){
+  if(!raw)return'';
+  let h=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n([\s\S]*?)```/g,(_,l,c)=>`<pre><code>${c.trim()}</code></pre>`)
+    .replace(/^#### (.+)$/gm,'<h4>$1</h4>').replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/^---+$/gm,'<hr>')
+    .replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>')
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/g,(_,hr,body)=>{
+      const ths=hr.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
+      const trs=body.trim().split('\n').map(r=>`<tr>${r.split('|').filter(c=>c.trim()).map(c=>`<td>${c.trim()}</td>`).join('')}</tr>`).join('');
+      return`<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+    })
+    .replace(/((?:^[-*] .+\n?)+)/gm,m=>`<ul>${m.trim().split('\n').map(l=>`<li>${l.replace(/^[-*] /,'')}</li>`).join('')}</ul>`)
+    .replace(/((?:^\d+\. .+\n?)+)/gm,m=>`<ol>${m.trim().split('\n').map(l=>`<li>${l.replace(/^\d+\. /,'')}</li>`).join('')}</ol>`)
+    .replace(/\n\n+/g,'</p><p>').replace(/\n/g,'<br>');
+  return`<p>${h}</p>`;
+}
+
+/* ===== PDF GENERATOR ===== */
+async function generatePDF(rawText,title,question){
+  if(!window.jspdf){toast('⚠ jsPDF not loaded yet. Try again.');return;}
+  toast('⏳ Generating PDF…');
+  await new Promise(r=>setTimeout(r,100));
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const PW=210,PH=297,M=20,CW=PW-M*2;
+    // Color palette
+    const P=[108,99,255],P2=[67,56,202],T=[6,182,212],O=[249,115,22],
+          W=[255,255,255],DK=[30,30,50],G=[100,100,140],
+          LG=[248,248,255],MG=[210,210,230],BG=[240,240,255];
+
+    /* ============ COVER PAGE ============ */
+    for(let i=0;i<=PH;i++){
+      const r=Math.round(P[0]+(T[0]-P[0])*i/PH);
+      const g=Math.round(P[1]+(T[1]-P[1])*i/PH);
+      const b=Math.round(P[2]+(T[2]-P[2])*i/PH);
+      doc.setFillColor(r,g,b);doc.rect(0,i,PW,1.5,'F');
+    }
+    doc.setDrawColor(255,255,255);doc.setLineWidth(0.4);
+    doc.circle(185,38,55,'S');doc.circle(28,265,65,'S');doc.circle(PW/2,PH/2,90,'S');
+    // Logo
+    doc.setFillColor(...W);doc.circle(PW/2,65,24,'F');
+    doc.setFontSize(22);doc.setFont('helvetica','bold');doc.setTextColor(...P);
+    doc.text('SA',PW/2,72,{align:'center'});
+    // Brand
+    doc.setFontSize(32);doc.setFont('helvetica','bold');doc.setTextColor(...W);
+    doc.text('SAARTHI AI',PW/2,103,{align:'center'});
+    doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(215,215,255);
+    doc.text('Autonomous Multi-Agent Research & Report Generation System',PW/2,113,{align:'center'});
+    doc.setDrawColor(...W);doc.setLineWidth(0.5);doc.line(M+25,121,PW-M-25,121);
+    // Report title box
+    const tLines=doc.splitTextToSize(title||'Research Report',CW-20);
+    const tBoxH=tLines.length*10+14;
+    doc.setFillColor(255,255,255);doc.setDrawColor(255,255,255);
+    // white translucent box — draw manually with opacity trick via light color
+    doc.setFillColor(130,120,255);
+    doc.roundedRect(M+4,127,CW-8,tBoxH,4,4,'F');
+    doc.setFontSize(15);doc.setFont('helvetica','bold');doc.setTextColor(...W);
+    tLines.forEach((l,i)=>doc.text(l,PW/2,141+i*10,{align:'center'}));
+    // Question subtitle
+    if(question){
+      const qY=129+tBoxH+6;
+      doc.setFontSize(10);doc.setFont('helvetica','italic');doc.setTextColor(200,225,255);
+      const qLines=doc.splitTextToSize(`"${question}"`,CW-16);
+      qLines.forEach((l,i)=>doc.text(l,PW/2,qY+i*6,{align:'center'}));
+    }
+    // Meta footer text
+    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(190,200,240);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} at ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`,PW/2,PH-30,{align:'center'});
+    doc.text('Powered by Groq LLM  •  Tavily Web Search  •  LangGraph Agents',PW/2,PH-23,{align:'center'});
+    // Footer bar
+    doc.setFillColor(...O);doc.rect(0,PH-14,PW,14,'F');
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(...W);
+    doc.text('SAARTHI AI  •  Autonomous Research System',PW/2,PH-6,{align:'center'});
+
+    /* ============ CONTENT PAGES ============ */
+    const lines=rawText.split('\n');
+    const BODY_FONT=10.5;   // comfortable reading size
+    const BODY_LH=6.5;      // line height for body
+    const HEAD1_FONT=15;
+    const HEAD2_FONT=12.5;
+    const HEAD3_FONT=11;
+    const HEAD4_FONT=10;
+    const HEADER_H=14;
+    const FOOTER_H=11;
+    const TOP_PAD=22;       // y after header
+    const BOT_LIMIT=PH-FOOTER_H-4;
+
+    let y=0,pg=0;
+
+    const addPage=()=>{
+      doc.addPage();pg++;
+      // Purple gradient header
+      doc.setFillColor(...P2);doc.rect(0,0,PW,HEADER_H,'F');
+      doc.setFillColor(...P);doc.rect(0,0,PW*0.55,HEADER_H,'F');
+      // Accent stripe
+      doc.setFillColor(...T);doc.rect(0,HEADER_H,PW,1.2,'F');
+      doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...W);
+      doc.text('SAARTHI AI  •  Research Report',M,HEADER_H-4);
+      doc.text(`Page ${pg}`,PW-M,HEADER_H-4,{align:'right'});
+      // Orange footer
+      doc.setFillColor(...O);doc.rect(0,PH-FOOTER_H,PW,FOOTER_H,'F');
+      doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(...W);
+      doc.text('Saarthi AI — Autonomous Multi-Agent Research System',PW/2,PH-4,{align:'center'});
+      y=TOP_PAD;
+    };
+    addPage();
+
+    const chkY=(need)=>{if(y+need>BOT_LIMIT)addPage();};
+    const stripMd=(s)=>s
+      .replace(/\*\*(.*?)\*\*/g,'$1')
+      .replace(/\*(.*?)\*/g,'$1')
+      .replace(/`([^`]+)`/g,'$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')
+      .replace(/^#+\s*/,'')
+      .trim();
+
+    // Always start content with correct font
+    doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+
+    let i=0;
+    while(i<lines.length){
+      const line=lines[i];
+
+      /* ── TABLE ── */
+      if(line.trim().startsWith('|')&&i+1<lines.length&&/^\|[-| :]+\|/.test(lines[i+1].trim())){
+        const headCells=line.split('|').filter(c=>c.trim()).map(c=>stripMd(c.trim()));
+        i+=2;
+        const bodyRows=[];
+        while(i<lines.length&&lines[i].trim().startsWith('|')){
+          bodyRows.push(lines[i].split('|').filter(c=>c.trim()).map(c=>stripMd(c.trim())));
+          i++;
+        }
+        chkY(14+bodyRows.length*9);
+        doc.autoTable({
+          startY:y,
+          head:[headCells],
+          body:bodyRows,
+          margin:{left:M,right:M},
+          theme:'grid',
+          styles:{
+            fontSize:9,
+            font:'helvetica',
+            cellPadding:{top:3.5,bottom:3.5,left:5,right:5},
+            overflow:'linebreak',
+            textColor:DK,
+            lineColor:MG,
+            lineWidth:0.25
+          },
+          headStyles:{fillColor:P,textColor:W,fontStyle:'bold',fontSize:9.5,cellPadding:{top:4.5,bottom:4.5,left:5,right:5}},
+          alternateRowStyles:{fillColor:BG},
+          columnStyles:{0:{fontStyle:'bold'}},
+        });
+        // IMPORTANT: reset font after autoTable (it changes font state)
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        y=doc.lastAutoTable.finalY+9;
+        continue;
+      }
+
+      /* ── H1 ── */
+      if(/^# /.test(line)){
+        const txt=stripMd(line);
+        // Set font FIRST so splitTextToSize uses correct metrics
+        doc.setFontSize(HEAD1_FONT);doc.setFont('helvetica','bold');
+        const h1Lines=doc.splitTextToSize(txt,CW-6);
+        const h1H=h1Lines.length*9+10;
+        chkY(h1H+8);
+        y+=5;
+        doc.setFillColor(...BG);doc.rect(M-2,y-6,CW+4,h1H,'F');
+        doc.setFillColor(...P);doc.rect(M-2,y-6,3.5,h1H,'F');
+        doc.setTextColor(...P);
+        h1Lines.forEach(l=>{chkY(10);doc.text(l,M+5,y);y+=9;});
+        doc.setDrawColor(...O);doc.setLineWidth(1);doc.line(M-2,y,M+CW+2,y);
+        y+=7;
+        // reset
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        i++;continue;
+      }
+
+      /* ── H2 ── */
+      if(/^## /.test(line)){
+        const txt=stripMd(line);
+        doc.setFontSize(HEAD2_FONT);doc.setFont('helvetica','bold');doc.setTextColor(...T);
+        const h2Lines=doc.splitTextToSize(txt,CW);
+        chkY(h2Lines.length*8+12);
+        y+=6;
+        h2Lines.forEach(l=>{doc.text(l,M,y);y+=8;});
+        doc.setDrawColor(...T);doc.setLineWidth(0.5);doc.line(M,y,M+55,y);
+        y+=5;
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        i++;continue;
+      }
+
+      /* ── H3 ── */
+      if(/^### /.test(line)){
+        const txt=stripMd(line);
+        doc.setFontSize(HEAD3_FONT);doc.setFont('helvetica','bold');doc.setTextColor(...O);
+        const h3Lines=doc.splitTextToSize(txt,CW);
+        chkY(h3Lines.length*7+8);
+        y+=4;
+        h3Lines.forEach(l=>{doc.text(l,M,y);y+=7;});
+        y+=3;
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        i++;continue;
+      }
+
+      /* ── H4 ── */
+      if(/^#### /.test(line)){
+        const txt=stripMd(line);
+        doc.setFontSize(HEAD4_FONT);doc.setFont('helvetica','bold');doc.setTextColor(...G);
+        const h4Lines=doc.splitTextToSize(txt,CW);
+        chkY(h4Lines.length*6+6);
+        y+=2;
+        h4Lines.forEach(l=>{doc.text(l,M,y);y+=6;});
+        y+=2;
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        i++;continue;
+      }
+
+      /* ── HR ── */
+      if(/^---+$/.test(line.trim())){
+        chkY(8);y+=4;
+        doc.setDrawColor(...MG);doc.setLineWidth(0.25);doc.line(M,y,PW-M,y);
+        y+=5;i++;continue;
+      }
+
+      /* ── BLOCKQUOTE ── */
+      if(/^>/.test(line.trim())){
+        const txt=stripMd(line.replace(/^>\s*/,''));
+        // Set font first for correct split metrics
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','italic');
+        const bqLines=doc.splitTextToSize(txt,CW-10);
+        const bqH=bqLines.length*BODY_LH+8;
+        chkY(bqH+2);
+        doc.setFillColor(...BG);doc.rect(M,y-4,CW,bqH,'F');
+        doc.setFillColor(...P);doc.rect(M,y-4,3.5,bqH,'F');
+        doc.setTextColor(...G);
+        bqLines.forEach(l=>{chkY(BODY_LH);doc.text(l,M+7,y);y+=BODY_LH;});
+        y+=6;
+        doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        i++;continue;
+      }
+
+      /* ── BULLET LIST ── */
+      if(/^[-*+]\s/.test(line.trim())){
+        const txt=stripMd(line.trim().replace(/^[-*+]\s+/,''));
+        // Set font first for correct split metrics
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        const bLines=doc.splitTextToSize(txt,CW-9);
+        const bH=bLines.length*BODY_LH+2;
+        chkY(bH+1);
+        doc.setFillColor(...O);doc.circle(M+2.5,y-1.5,1.5,'F');
+        bLines.forEach(l=>{chkY(BODY_LH);doc.text(l,M+7,y);y+=BODY_LH;});
+        y+=2;i++;continue;
+      }
+
+      /* ── NUMBERED LIST ── */
+      if(/^\d+\.\s/.test(line.trim())){
+        const m=line.trim().match(/^(\d+)\.\s+(.*)/);
+        if(m){
+          // Set font first for correct split metrics
+          doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+          const nLines=doc.splitTextToSize(stripMd(m[2]),CW-11);
+          const nH=nLines.length*BODY_LH+2;
+          chkY(nH+1);
+          // number badge
+          doc.setFillColor(...P);doc.circle(M+3.5,y-2,3.5,'F');
+          doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.setTextColor(...W);
+          doc.text(m[1],M+3.5,y-0.5,{align:'center'});
+          // text
+          doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+          nLines.forEach(l=>{chkY(BODY_LH);doc.text(l,M+10,y);y+=BODY_LH;});
+          y+=2;
+        }
+        i++;continue;
+      }
+
+      /* ── EMPTY LINE ── */
+      if(line.trim()===''){y=Math.min(y+3,BOT_LIMIT-2);i++;continue;}
+
+      /* ── CODE BLOCK (``` fences) ── */
+      if(line.trim().startsWith('```')){
+        i++;
+        const codeLines=[];
+        while(i<lines.length&&!lines[i].trim().startsWith('```')){codeLines.push(lines[i]);i++;}
+        if(codeLines.length){
+          // Set courier font first for correct split metrics
+          doc.setFontSize(8.5);doc.setFont('courier','normal');
+          const cH=codeLines.length*(BODY_LH-0.5)+10;
+          chkY(cH);
+          doc.setFillColor(28,28,45);doc.rect(M,y-3,CW,cH,'F');
+          doc.setTextColor(180,255,180);
+          codeLines.forEach(cl=>{
+            const cWrapped=doc.splitTextToSize(cl||' ',CW-8);
+            cWrapped.forEach(cw=>{chkY(BODY_LH);doc.text(cw,M+4,y);y+=BODY_LH-0.5;});
+          });
+          y+=5;
+        }
+        // CRITICAL: always reset font after code block
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        i++;continue;
+      }
+
+      /* ── PARAGRAPH ── */
+      const txt=stripMd(line);
+      if(txt){
+        // Set font FIRST, then split — ensures correct line-break metrics
+        doc.setFontSize(BODY_FONT);doc.setFont('helvetica','normal');doc.setTextColor(...DK);
+        const pLines=doc.splitTextToSize(txt,CW);
+        chkY(pLines.length*BODY_LH+3);
+        pLines.forEach(l=>{chkY(BODY_LH);doc.text(l,M,y);y+=BODY_LH;});
+        y+=3;
+      }
+      i++;
+    }
+
+    const slug=(title||'report').slice(0,40).replace(/\s+/g,'-').replace(/[^a-z0-9-]/gi,'').toLowerCase();
+    doc.save(`saarthi-ai-${slug||'report'}.pdf`);
+    toast('📄 PDF downloaded!');
+  }catch(e){console.error(e);toast('⚠ PDF error: '+e.message);}
+}
+
+/* ===== PROGRESS ===== */
+const STEPS=[{id:'plan',l:'Planning research strategy…'},{id:'srch',l:'Searching web with Tavily…'},{id:'read',l:'Reading & summarising sources…'},{id:'comp',l:'Compressing research notes…'},{id:'writ',l:'Writing final report…'}];
+function mkProg(){
+  const wrap=document.createElement('div');wrap.className='prog';let cur=0;
+  STEPS.forEach((s,i)=>{const d=document.createElement('div');d.className='ps'+(i===0?' ac':'');d.id='ps-'+s.id;d.innerHTML=`<span style="width:16px;display:inline-block;text-align:center">${i===0?'<div class="sp"></div>':'○'}</span> ${s.l}`;wrap.appendChild(d);});
+  function adv(){if(cur<STEPS.length-1){const c=wrap.querySelector('#ps-'+STEPS[cur].id);c.className='ps dn';c.querySelector('span').innerHTML='✓';cur++;const n=wrap.querySelector('#ps-'+STEPS[cur].id);n.className='ps ac';n.querySelector('span').innerHTML='<div class="sp"></div>';}}
+  function fin(){wrap.querySelectorAll('.ps').forEach(e=>{e.className='ps dn';e.querySelector('span').innerHTML='✓';});}
+  return{el:wrap,adv,fin};
+}
+
+/* ===== EXTRACT REPORT ===== */
+function extractRep(messages){
+  if(!Array.isArray(messages))return'';
+  for(let i=messages.length-1;i>=0;i--){
+    const m=messages[i];const role=m.role||m.type;
+    if(role==='assistant'||role==='ai'){
+      if(typeof m.content==='string'&&m.content.length>80)return m.content;
+      if(Array.isArray(m.content)){const t=m.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');if(t.length>80)return t;}
+    }
+  }
+  return'';
+}
+
+/* ===== SEND QUESTION ===== */
+async function sendQ(){
+  const q=document.getElementById('qinp').value.trim();
+  if(!q||busy)return;
+  busy=true;
+  document.getElementById('qinp').value='';document.getElementById('qinp').style.height='auto';
+  const sbtn=document.getElementById('sbtn');
+  sbtn.disabled=true;sbtn.innerHTML='<div class="sp" style="border-color:#555;border-top-color:#fff;width:12px;height:12px"></div> Researching…';
+  const chat=document.getElementById('chat');
+  // User bubble
+  const ub=document.createElement('div');ub.className='msg user';
+  ub.innerHTML=`<div class="msg-meta"><span class="mlbl">🧑 You</span><span class="mtime">${ts()}</span></div><div>${esc(q)}</div>`;
+  chat.appendChild(ub);chat.scrollTop=chat.scrollHeight;
+  // AI bubble
+  const ab=document.createElement('div');ab.className='msg ai';
+  const meta=document.createElement('div');meta.className='msg-meta';
+  meta.innerHTML=`<span class="mlbl">🤖 Saarthi AI</span><span class="mtime">${ts()}</span>`;
+  ab.appendChild(meta);
+  const prog=mkProg();ab.appendChild(prog.el);
+  chat.appendChild(ab);chat.scrollTop=chat.scrollHeight;
+  const timers=[setTimeout(()=>prog.adv(),6000),setTimeout(()=>prog.adv(),30000),setTimeout(()=>prog.adv(),80000),setTimeout(()=>prog.adv(),140000)];
+  const cfg={configurable:{research_model:document.getElementById('rm').value,compression_model:document.getElementById('rm').value,final_report_model:document.getElementById('rm').value,summarization_model:document.getElementById('sm').value,search_api:'tavily',max_concurrent_research_units:parseInt(document.getElementById('cu').value)||1,allow_clarification:false}};
+  let rawText='';
+  try{
+    const tr=await fetch(`${API}/threads`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    if(!tr.ok)throw new Error(`Thread failed (${tr.status}): ${await tr.text()}`);
+    const th=await tr.json();if(!th.thread_id)throw new Error('No thread_id: '+JSON.stringify(th));
+    const rr=await fetch(`${API}/threads/${th.thread_id}/runs/stream`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({assistant_id:AID,input:{messages:[{role:'human',content:q}]},config:cfg,stream_mode:'values'})});
+    if(!rr.ok)throw new Error(`Run failed (${rr.status}): ${await rr.text()}`);
+    const reader=rr.body.getReader(),dec=new TextDecoder();let buf='';
+    while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const ls=buf.split('\n');buf=ls.pop()??'';for(const l of ls){if(!l||!l.startsWith('data: '))continue;const raw=l.slice(6).trim();if(!raw||raw==='[DONE]')continue;let obj;try{obj=JSON.parse(raw);}catch{continue;}const rep=extractRep(obj?.messages);if(rep&&rep.length>rawText.length)rawText=rep;}}
+    // Fallback poll
+    if(!rawText){
+      prog.adv();
+      const rd=document.createElement('div');rd.className='rp';rd.innerHTML='<p style="color:var(--text2)">⏳ Research running — polling for results…</p>';ab.appendChild(rd);
+      for(let at=0;at<22;at++){
+        await new Promise(r=>setTimeout(r,8000));
+        try{const sr=await fetch(`${API}/threads/${th.thread_id}/state`);if(sr.ok){const s=await sr.json();const rep=extractRep(s?.values?.messages)||'';if(rep&&rep.length>200){rawText=rep;rd.remove();break;}}}catch{}
+      }
+      if(!rawText){const sr2=await fetch(`${API}/threads/${th.thread_id}/state`);if(sr2.ok){const s2=await sr2.json();rawText=extractRep(s2?.values?.messages)||'';}}
+    }
+    timers.forEach(clearTimeout);prog.fin();await new Promise(r=>setTimeout(r,300));prog.el.remove();
+    if(rawText){
+      const words=wc(rawText);totalW+=words;
+      const firstLine=rawText.split('\n')[0].replace(/^#+\s*/,'').trim();
+      const rid=Date.now();
+      meta.innerHTML=`<span class="mlbl">🤖 Saarthi AI</span><span class="wc">~${words} words</span>
+        <div class="macts">
+          <button class="bsm" onclick="copyT(this.dataset.raw,this)" data-raw="${esc(rawText)}">📋 Copy</button>
+          <button class="bsm" onclick="dlMd(this.dataset.raw,this.dataset.title)" data-raw="${esc(rawText)}" data-title="${esc(firstLine)}">⬇ .md</button>
+          <button class="bsm pdf-btn" onclick="generatePDF(this.dataset.raw,this.dataset.title,this.dataset.q)" data-raw="${esc(rawText)}" data-title="${esc(firstLine)}" data-q="${esc(q)}">📄 PDF</button>
+        </div>
+        <span class="mtime">${ts()}</span>`;
+      const rd=document.createElement('div');rd.className='rp';rd.innerHTML=renderMd(rawText);ab.appendChild(rd);
+      hist.unshift({q,report:rawText,time:ts(),words});saveHist();updateBadge();updateStats();
+    }else{
+      const nd=document.createElement('div');nd.className='rp';nd.textContent='Research complete but no report returned. Please wait a minute and try again.';ab.appendChild(nd);
+    }
+  }catch(e){timers.forEach(clearTimeout);prog.el.remove();const ed=document.createElement('div');ed.className='msg err';ed.innerHTML=`<strong>⚠ Error</strong><br>${esc(e.message)}`;chat.appendChild(ed);console.error(e);}
+  sbtn.disabled=false;sbtn.innerHTML='🔍 Research';busy=false;chat.scrollTop=chat.scrollHeight;
+}
+
+/* ===== HISTORY ===== */
+function saveHist(){try{localStorage.setItem('saarthi-history',JSON.stringify(hist.slice(0,50)));}catch(e){}}
+function updateBadge(){const b=document.getElementById('hbadge');if(hist.length){b.style.display='';b.textContent=hist.length;}else b.style.display='none';}
+function renderHist(){
+  const l=document.getElementById('hlist');
+  if(!hist.length){l.innerHTML='<div class="hempty"><span style="font-size:2.5rem;opacity:.3">📭</span><strong>No history yet</strong><span style="font-size:.8rem">Reports appear here after research</span></div>';return;}
+  l.innerHTML='<div class="hgrid">'+hist.map((h,i)=>`<div class="hi" onclick="viewHist(${i})"><span style="font-size:1.3rem;flex-shrink:0">📄</span><div style="flex:1;min-width:0"><div class="hiq">${esc(h.q)}</div><div class="hip">${esc(h.report.slice(0,200))}</div><div style="display:flex;gap:8px;margin-top:5px"><span class="hitag">🕐 ${h.time}</span><span class="hitag">~${h.words} words</span></div></div><button class="delbtn" onclick="delHist(event,${i})">🗑</button></div>`).join('')+'</div>';
+}
+function viewHist(i){const h=hist[i];nav('research');const chat=document.getElementById('chat');const ab=document.createElement('div');ab.className='msg ai';const fl=h.report.split('\n')[0].replace(/^#+\s*/,'').trim();ab.innerHTML=`<div class="msg-meta"><span class="mlbl">🤖 Saarthi AI</span><span class="wc">~${h.words} words</span><div class="macts"><button class="bsm" onclick="copyT(this.dataset.raw,this)" data-raw="${esc(h.report)}">📋 Copy</button><button class="bsm" onclick="dlMd(this.dataset.raw,this.dataset.title)" data-raw="${esc(h.report)}" data-title="${esc(fl)}">⬇ .md</button><button class="bsm pdf-btn" onclick="generatePDF(this.dataset.raw,this.dataset.title,this.dataset.q)" data-raw="${esc(h.report)}" data-title="${esc(fl)}" data-q="${esc(h.q)}">📄 PDF</button></div><span class="mtime">${h.time} (history)</span></div><div class="rp">${renderMd(h.report)}</div>`;chat.appendChild(ab);chat.scrollTop=chat.scrollHeight;}
+function delHist(e,i){e.stopPropagation();hist.splice(i,1);saveHist();updateBadge();renderHist();}
+function clrHist(){hist=[];totalW=0;saveHist();updateBadge();renderHist();updateStats();toast('History cleared');}
+function clearChat(){document.getElementById('chat').innerHTML='<div class="msg ai"><div class="msg-meta"><span class="mlbl">🤖 Saarthi AI</span></div><div class="rp"><p>Chat cleared. Ask a new research question!</p></div></div>';}
+
+/* ===== STATS ===== */
+function updateStats(){
+  totalW=hist.reduce((s,h)=>s+(h.words||0),0);
+  document.getElementById('st-reps').textContent=hist.length;
+  const tw=totalW;
+  document.getElementById('st-words').textContent=tw>999?(tw/1000).toFixed(1)+'k':tw;
+}
+
+/* ===== SETTINGS SYNC ===== */
+function syncS(){document.getElementById('rm').value=document.getElementById('s-rm').value;document.getElementById('sm').value=document.getElementById('s-sm').value;document.getElementById('cu').value=document.getElementById('s-cu').value;toast('✓ Settings saved!');}
+
+/* ===== FAQ ===== */
+function tfaq(el){const fi=el.closest('.fi');const op=fi.classList.contains('open');document.querySelectorAll('.fi').forEach(f=>f.classList.remove('open'));if(!op)fi.classList.add('open');}
+</script>
+</body>
+</html>
