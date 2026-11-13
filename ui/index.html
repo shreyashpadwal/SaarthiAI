@@ -776,7 +776,14 @@ function mkProg(){
 }
 
 /* ===== EXTRACT REPORT ===== */
-function extractRep(messages){
+function extractRep(state){
+  if(!state)return'';
+  // The graph returns the final answer in final_report. Depending on the
+  // LangGraph stream mode/version, it may also be present in values or messages.
+  for(const value of [state.final_report,state.values?.final_report,state.data?.final_report]){
+    if(typeof value==='string'&&value.trim().length>0)return value.trim();
+  }
+  const messages=Array.isArray(state)?state:(state.messages||state.values?.messages||state.data?.messages);
   if(!Array.isArray(messages))return'';
   for(let i=messages.length-1;i>=0;i--){
     const m=messages[i];const role=m.role||m.type;
@@ -810,7 +817,7 @@ async function sendQ(){
   chat.appendChild(ab);chat.scrollTop=chat.scrollHeight;
   const timers=[setTimeout(()=>prog.adv(),6000),setTimeout(()=>prog.adv(),30000),setTimeout(()=>prog.adv(),80000),setTimeout(()=>prog.adv(),140000)];
   const cfg={configurable:{research_model:document.getElementById('rm').value,compression_model:document.getElementById('rm').value,final_report_model:document.getElementById('rm').value,summarization_model:document.getElementById('sm').value,search_api:'tavily',max_concurrent_research_units:parseInt(document.getElementById('cu').value)||1,allow_clarification:false}};
-  let rawText='';
+  let rawText='',runError='';
   try{
     const tr=await fetch(`${API}/threads`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     if(!tr.ok)throw new Error(`Thread failed (${tr.status}): ${await tr.text()}`);
@@ -818,17 +825,24 @@ async function sendQ(){
     const rr=await fetch(`${API}/threads/${th.thread_id}/runs/stream`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({assistant_id:AID,input:{messages:[{role:'human',content:q}]},config:cfg,stream_mode:'values'})});
     if(!rr.ok)throw new Error(`Run failed (${rr.status}): ${await rr.text()}`);
     const reader=rr.body.getReader(),dec=new TextDecoder();let buf='';
-    while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const ls=buf.split('\n');buf=ls.pop()??'';for(const l of ls){if(!l||!l.startsWith('data: '))continue;const raw=l.slice(6).trim();if(!raw||raw==='[DONE]')continue;let obj;try{obj=JSON.parse(raw);}catch{continue;}const rep=extractRep(obj?.messages);if(rep&&rep.length>rawText.length)rawText=rep;}}
+    function consumeSSELine(line){
+      const trimmed=line.trim();if(!trimmed.startsWith('data:'))return;
+      const raw=trimmed.slice(5).trim();if(!raw||raw==='[DONE]')return;
+      try{const obj=JSON.parse(raw);if(obj?.error){const e=obj.error;runError=typeof e==='string'?e:(e.message||JSON.stringify(e));}const rep=extractRep(obj);if(rep&&rep.length>rawText.length)rawText=rep;}catch{}
+    }
+    while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const ls=buf.split(/\r?\n/);buf=ls.pop()??'';for(const l of ls)consumeSSELine(l);}
+    if(buf)consumeSSELine(buf);
     // Fallback poll
     if(!rawText){
       prog.adv();
       const rd=document.createElement('div');rd.className='rp';rd.innerHTML='<p style="color:var(--text2)">⏳ Research running — polling for results…</p>';ab.appendChild(rd);
       for(let at=0;at<22;at++){
         await new Promise(r=>setTimeout(r,8000));
-        try{const sr=await fetch(`${API}/threads/${th.thread_id}/state`);if(sr.ok){const s=await sr.json();const rep=extractRep(s?.values?.messages)||'';if(rep&&rep.length>200){rawText=rep;rd.remove();break;}}}catch{}
+        try{const sr=await fetch(`${API}/threads/${th.thread_id}/state`);if(sr.ok){const s=await sr.json();const rep=extractRep(s)||'';if(rep&&rep.length>80){rawText=rep;rd.remove();break;}const taskError=s?.tasks?.find(t=>t.error)?.error;if(taskError){runError=typeof taskError==='string'?taskError:JSON.stringify(taskError);rd.remove();break;}}}catch{}
       }
-      if(!rawText){const sr2=await fetch(`${API}/threads/${th.thread_id}/state`);if(sr2.ok){const s2=await sr2.json();rawText=extractRep(s2?.values?.messages)||'';}}
+      if(!rawText){const sr2=await fetch(`${API}/threads/${th.thread_id}/state`);if(sr2.ok){const s2=await sr2.json();rawText=extractRep(s2)||'';const taskError=s2?.tasks?.find(t=>t.error)?.error;if(taskError)runError=typeof taskError==='string'?taskError:JSON.stringify(taskError);}}
     }
+    if(!rawText&&runError)throw new Error(`Research run failed: ${runError}`);
     timers.forEach(clearTimeout);prog.fin();await new Promise(r=>setTimeout(r,300));prog.el.remove();
     if(rawText){
       const words=wc(rawText);totalW+=words;
