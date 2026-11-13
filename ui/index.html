@@ -283,15 +283,15 @@ body{background:var(--bg);color:var(--text);display:flex;overflow:hidden;transit
       <div id="cfgbar">
         <label>Research model:</label>
         <select id="rm">
-          <option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b ✅</option>
-          <option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option>
+          <option value="groq:qwen/qwen3.8-27b" selected>groq:qwen/qwen3.8-27b ✅</option>
           <option value="groq:openai/gpt-oss-20b">groq:openai/gpt-oss-20b</option>
+          <option value="groq:openai/gpt-oss-120b">groq:openai/gpt-oss-120b</option>
         </select>
         <label>Summarization:</label>
         <select id="sm">
-          <option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b ✅</option>
+          <option value="groq:openai/gpt-oss-20b" selected>groq:openai/gpt-oss-20b ✅</option>
           <option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option>
-          <option value="groq:openai/gpt-oss-20b">groq:openai/gpt-oss-20b ⚠️</option>
+          <option value="groq:openai/gpt-oss-120b">groq:openai/gpt-oss-120b ⚠️</option>
         </select>
         <label>Concurrent:</label>
         <input id="cu" type="number" value="1" min="1" max="3" style="width:48px"/>
@@ -353,8 +353,8 @@ body{background:var(--bg);color:var(--text);display:flex;overflow:hidden;transit
     <div class="sec-hd" style="margin-bottom:4px">Settings</div><div class="sec-sub" style="margin-bottom:20px">Configure Saarthi AI preferences</div>
     <div class="ss">
       <div class="sh">🤖 Model Configuration</div>
-      <div class="sr"><div><div class="sl">Research Model</div><div class="sd">Used for planning, compression & final report</div></div><select class="si" id="s-rm" onchange="syncS()"><option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b</option><option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option></select></div>
-      <div class="sr"><div><div class="sl">Summarization Model</div><div class="sd">Summarises each web source (runs many times)</div></div><select class="si" id="s-sm" onchange="syncS()"><option value="groq:openai/gpt-oss-120b" selected>groq:openai/gpt-oss-120b</option><option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option></select></div>
+      <div class="sr"><div><div class="sl">Research Model</div><div class="sd">Used for planning, compression & final report</div></div><select class="si" id="s-rm" onchange="syncS()"><option value="groq:qwen/qwen3.8-27b" selected>groq:qwen/qwen3.8-27b</option><option value="groq:openai/gpt-oss-20b">groq:openai/gpt-oss-20b</option></select></div>
+      <div class="sr"><div><div class="sl">Summarization Model</div><div class="sd">Summarises each web source (runs many times)</div></div><select class="si" id="s-sm" onchange="syncS()"><option value="groq:openai/gpt-oss-20b" selected>groq:openai/gpt-oss-20b</option><option value="groq:qwen/qwen3.8-27b">groq:qwen/qwen3.8-27b</option></select></div>
       <div class="sr"><div><div class="sl">Concurrent Research Units</div><div class="sd">Parallel agents (lower = fewer rate limit errors)</div></div><input type="number" class="si" id="s-cu" value="1" min="1" max="3" style="min-width:70px;max-width:70px" onchange="syncS()"/></div>
     </div>
     <div class="ss">
