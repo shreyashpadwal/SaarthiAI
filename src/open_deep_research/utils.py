@@ -40,6 +40,20 @@ TAVILY_SEARCH_DESCRIPTION = (
     "A search engine optimized for comprehensive, accurate, and trusted results. "
     "Useful for when you need to answer questions about current events."
 )
+
+
+def structured_output_method(model: str) -> str:
+    """Select the native structured-output mode for supported Groq models.
+
+    Groq's GPT-OSS models support JSON Schema output. Using function calling can
+    fail when the model emits the requested object as text instead of a tool call.
+    Other models keep the existing tool-calling behavior.
+    """
+    if model.startswith("groq:openai/gpt-oss-"):
+        return "json_schema"
+    return "function_calling"
+
+
 @tool(description=TAVILY_SEARCH_DESCRIPTION)
 async def tavily_search(
     queries: List[str],
@@ -88,7 +102,10 @@ async def tavily_search(
         max_tokens=configurable.summarization_model_max_tokens,
         api_key=model_api_key,
         tags=["langsmith:nostream"]
-    ).with_structured_output(Summary).with_retry(
+    ).with_structured_output(
+        Summary,
+        method=structured_output_method(configurable.summarization_model),
+    ).with_retry(
         stop_after_attempt=configurable.max_structured_output_retries
     )
     
